@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>LSM-Tree Compaction Visualization</title>
+	<!-- Bootswatch CSS based on Bootstrao -->
+	<!-- Theme: http://bootswatch.com/flatly/ -->
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<!-- Plugin CSS -->
+	<link rel="stylesheet" href="css/bootstrap-slider.min.css">
+	<!-- Custom CSS -->
+	<link rel="stylesheet" href="css/styles.css">
+	<link rel="stylesheet" href="css/tooltip.css">
+	<!-- Google Font -->
+	<link href="https://fonts.googleapis.com/css?family=Lato:300,400&display=swap" rel="stylesheet">
+	<!-- Google Material Icon-->
+	<link href="https://fonts.googleapis.com/css2?family=Material+Icons" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Material+Icons+Outlined" rel="stylesheet">
+
+	<style>
+		div.fixed {
+		position: fixed;
+		bottom: 50%;
+		left: 0;
+		width: 60px;
+		height: 200px;
+		}
+	</style>
+</head>
+
+<body>
+
+		<div id="interactiveDemo" class="container">
+			<div id="control-panel" class="">
+				<div class="container-fluid">
+					<div class="row">
+						<div id="lsm-button-group" class="col-3">
+							<div class="btn-group" role="group" aria-label="progress-control">
+								<button id="autoplay-button" type="button" class="btn btn-info">Play</button>
+								<!-- <button id="stop-button" type="button" class="btn btn-warning">Pause</button>
+								<button id="finish-button" type="button" class="btn btn-danger">Finish</button> -->
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<br/>
+
+			<div class="text-center" id="rr-emul" style="width:100%">
+      </div>
+      <div class="row" >
+        <p id="rr-emul-text" style="margin-left:40px;margin-top:10px">Density of every selected file:</p>
+      </div>
+      <div class="row">
+        <p id="rr-emul-wa" style="margin-left:40px;margin-top:10px">#bytes from compaction (read from the next lvl, others are the same):</p>
+      </div>
+
+      <br>
+      <div class="text-center" id="mo-emul" style="margin-right:0px;width:100%">
+      </div>
+      <div class="row">
+        <p id="mo-emul-text" style="margin-left:40px;margin-top:10px">Density of every selected file:</p>
+      </div>
+      <div class="row">
+        <p id="mo-emul-wa" style="margin-left:40px;margin-top:10px">#bytes from compaction (read from the next lvl, others are the same):</p>
+      </div>
+      <br>
+      <br>
+      <div class="row">
+          <p>Here is the reason why others are the same. We have two compactions every iteration, one is from upper to the current, of which the
+          number of compaction bytes is essentially the input file size (constant) plus the summed size of existing files in the current level. In the second
+          compaction, the number of compaction bytes is the size of selected file (which assumes to be empty in the next-iteration compaction) in the current level plus the size of overlapped files in the next level. Therefore, the size of selected file from the second compaction pluses the summed size of existing files in the current level in the first compaction is a constant (the maximum capacity of the current levl). Therefore, in our example, the only difference between two compaction priorities is how many bytes are overlapped in the next level.
+          Assuming #keys in the next level is proportional to the key range, we essentially are comparing the summed selected files' key range.</p>
+      </div>
+      <div id="gradient-show">
+      </div>
+
+	<!-- jQuery (Bootstrap JS plugins depend on it) -->
+	<script src="js/jquery-3.4.1.min.js"></script>
+	<!-- <script src="js/bootstrap.min.js"></script> -->
+	<script src="js/bootstrap.bundle.min.js"></script>
+	<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {preview: "none", inlineMath: [['$','$'], ['\\(','\\)']]}, "fast-preview": {disabled: true}});
+  </script>
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	<script src="js/bootstrap-slider.js"></script>
+	<script src="js/popper.min.js"></script>
+	<script src="js/main.js"></script>
+</body>
+
+</html>
