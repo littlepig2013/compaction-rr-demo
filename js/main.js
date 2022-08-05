@@ -54,7 +54,8 @@ rr_picking_file_idx = 0;
 mo_picking_file_idx = 0;
 max_density = 10;
 filesize = 4;
-acc_cmpct_elements_in_next_lvl = 0;
+rr_acc_cmpct_elements_in_next_lvl = 0;
+mo_acc_cmpct_elements_in_next_lvl = 0;
 var getColor = function(density) {
   rate = density*1.0/max_density;
   r = (Math.round(parseInt("00",16)*rate + (1 - rate)*parseInt("DF",16))).toString(16);
@@ -131,7 +132,7 @@ var pickFileToCompact = function(policy) {
     for(var i = 0; i < rr_files.length; i++) {
       if (rr_files[i].start >= rr_cursor) {
         file_idx_picked = i;
-        acc_cmpct_elements_in_next_lvl += rr_files[i].stop - rr_files[i].start;
+        rr_acc_cmpct_elements_in_next_lvl += rr_files[i].stop - rr_files[i].start;
         selected_density = rr_files[i].getDensity();
         break;
       }
@@ -141,6 +142,7 @@ var pickFileToCompact = function(policy) {
     } else {
       rr_cursor = rr_files[file_idx_picked + 1].start;
     }
+    document.getElementById(policy+'-wa').innerHTML = "#bytes from compaction (read from the next lvl, others are the same): &nbsp;&nbsp;" + rr_acc_cmpct_elements_in_next_lvl.toFixed(2) + "x";
   } else {
     var min_density = 0;
     for(var i = 0; i < mo_files.length; i++) {
@@ -150,12 +152,11 @@ var pickFileToCompact = function(policy) {
       }
     }
     selected_density = min_density;
-    acc_cmpct_elements_in_next_lvl += mo_files[file_idx_picked].stop - mo_files[file_idx_picked].start;
+    mo_acc_cmpct_elements_in_next_lvl += mo_files[file_idx_picked].stop - mo_files[file_idx_picked].start;
+    document.getElementById(policy+'-wa').innerHTML = "#bytes from compaction (read from the next lvl, others are the same): &nbsp;&nbsp;" + mo_acc_cmpct_elements_in_next_lvl.toFixed(2) + "x";
   }
   selected_file_btn = parent_elem.lastChild.children[file_idx_picked];
   selected_file_btn.style['border-color'] = 'red';
-  document.getElementById(policy+'-text').innerHTML = document.getElementById(policy+'-text').innerHTML + "  &nbsp;&nbsp;" + parseFloat(selected_density.toFixed(2)) + "x"
-  document.getElementById(policy+'-wa').innerHTML = "#bytes from compaction (read from the next lvl, others are the same): &nbsp;&nbsp;" + acc_cmpct_elements_in_next_lvl.toFixed(2) + "x";
   return file_idx_picked;
 }
 
@@ -287,6 +288,9 @@ var cmpctToCurrLvl = function(policy) {
 }
 
 var init = function() {
+  upper_rr_files = [new SstFile(0.0, 4, 0.0)];
+  rr_files = [new SstFile(0.0, 1, 4.0), new SstFile(1.0, 2.0, 4.0), new SstFile(2.0, 3.0, 4.0), new SstFile(3.0, 4.0, 4.0)];
+  mo_files = [new SstFile(0.0, 1, 4.0), new SstFile(1.0, 2.0, 4.0), new SstFile(2.0, 3.0, 4.0), new SstFile(3.0, 4.0, 4.0)];
   drawSstFiles(upper_rr_files, "rr-emul");
   drawSstFiles(rr_files, "rr-emul");
   drawSstFiles(upper_rr_files, "mo-emul");
@@ -300,7 +304,7 @@ var init = function() {
 }
 
 function startPlaying() {
-	if (iterations >= 7) return;
+	if (iterations >= 14) return;
   if (phase == -1) {
     currLvlFull("rr-emul");
     currLvlFull("mo-emul");
@@ -325,11 +329,12 @@ function startPlaying() {
     phase = -1;
     iterations++;
   }
-  setTimeout(startPlaying, 500)
+  setTimeout(startPlaying, 1000)
 }
 
 
 document.querySelector("#autoplay-button").onclick = startPlaying;
+document.querySelector("#reset-button").onclick = init;
 
 window.addEventListener('load', (event) => {
   init();
