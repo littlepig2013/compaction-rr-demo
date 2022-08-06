@@ -45,12 +45,14 @@ class SstFile {
 localId = 0;
 iterations = 0;
 phase = -1;
-upper_rr_files = [new SstFile(0.0, 4, 0.0)];
+upper_rr_files = [new SstFile(0.0, 4, 4.0)];
 rr_files = [new SstFile(0.0, 1, 4.0), new SstFile(1.0, 2.0, 4.0), new SstFile(2.0, 3.0, 4.0), new SstFile(3.0, 4.0, 4.0)];
 mo_files = [new SstFile(0.0, 1, 4.0), new SstFile(1.0, 2.0, 4.0), new SstFile(2.0, 3.0, 4.0), new SstFile(3.0, 4.0, 4.0)];
 rr_new_files = [];
 rr_cursor = 0;
 rr_picking_file_idx = 0;
+rr_last_pick_ele = 0;
+mo_last_pick_ele = 0;
 mo_picking_file_idx = 0;
 max_density = 10;
 filesize = 4;
@@ -78,15 +80,17 @@ var drawSstFiles = function(input_files, policy) {
     btn.setAttribute("class", "lsm-btn btn btn-secondary");
     var width = total_width*(input_files[i].stop - input_files[i].start)
     var border_style = "thick solid #D3D3D3";
-    var color = getColor(input_files[i].getDensity());
+    //var color = getColor(input_files[i].getDensity());
+    var color = getColor(input_files[i].num_of_elements);
     if (input_files[i].num_of_elements == 0){
       border_style = "thick dotted #000000";
       color = "#FFFFFF";
     } else {
-      if (input_files[i].stop - input_files[i].start < 0.02) {
-        btn.innerHTML = "<p style='margin-left:-12px;font-size:12px;margin-top:5px'>" + parseFloat(input_files[i].getDensity().toFixed(2)) + "x" + "</p>";
+      if (input_files[i].stop - input_files[i].start < 0.2) {
+        btn.innerHTML = "<p style='font-style:bold;color:black;margin-left:-12px;font-size:12px;margin-top:5px'>" + parseFloat(input_files[i].num_of_elements.toFixed(2)) + "x" + "</p>";
       } else {
-        btn.innerHTML = "<p class='text-center'>" + parseFloat(input_files[i].getDensity().toFixed(2)) + "x" + "</p>";
+        //btn.innerHTML = "<p class='text-center'>" + parseFloat(input_files[i].getDensity().toFixed(2)) + "x" + "</p>";
+        btn.innerHTML = "<p class='text-center' style='font-style:bold;'>" + parseFloat(input_files[i].num_of_elements.toFixed(2)) + "x" + "</p>";
       }
 
     }
@@ -133,6 +137,7 @@ var pickFileToCompact = function(policy) {
       if (rr_files[i].start >= rr_cursor) {
         file_idx_picked = i;
         rr_acc_cmpct_elements_in_next_lvl += rr_files[i].stop - rr_files[i].start;
+        rr_last_pick_ele = rr_files[i].num_of_elements; 
         selected_density = rr_files[i].getDensity();
         break;
       }
@@ -152,6 +157,7 @@ var pickFileToCompact = function(policy) {
       }
     }
     selected_density = min_density;
+    mo_last_pick_ele = mo_files[file_idx_picked].num_of_elements; 
     mo_acc_cmpct_elements_in_next_lvl += mo_files[file_idx_picked].stop - mo_files[file_idx_picked].start;
     document.getElementById(policy+'-wa').innerHTML = "#bytes from compaction (read from the next lvl, others are the same): &nbsp;&nbsp;" + mo_acc_cmpct_elements_in_next_lvl.toFixed(2) + "x";
   }
@@ -172,8 +178,8 @@ var emptyFile = function(idx, policy) {
 var fillUpperLvl = function(policy) {
   var upper_lvl_elem = document.getElementById(policy).children[0];
   upper_lvl_elem.children[0].style['border'] = "thick solid #D3D3D3";
-  upper_lvl_elem.children[0].style['background-color'] = getColor(0.1);
-  upper_lvl_elem.children[0].innerHTML = "1.00x";
+  upper_lvl_elem.children[0].style['background-color'] = getColor(4.00);
+  upper_lvl_elem.children[0].innerHTML = "4.00x";
   upper_lvl_elem.removeChild(upper_lvl_elem.lastChild);
   upper_lvl_elem.appendChild(createGlowBulb());
 }
@@ -183,6 +189,7 @@ var cmpctToCurrLvl = function(policy) {
   var new_files = [];
   var next_start_key = 0.0;
   var acc_size = 0.0;
+  var curr_total_elements = 0.0;
   var temp_files;
   var cursor;
   if (policy == "rr-emul") {
@@ -200,6 +207,9 @@ var cmpctToCurrLvl = function(policy) {
     cursor = 0.0;
   }
 
+  for (var j = 0; j < temp_files.length; j++) {
+    curr_total_elements += temp_files[j].num_of_elements;
+  }
   var i = 0;
   var padding_end = temp_files[0].start;
   var front_padding_num_elements = padding_end - next_start_key;
@@ -222,8 +232,9 @@ var cmpctToCurrLvl = function(policy) {
       if (!split_by_cursor && padding_end <= cursor && temp_files[i].stop > cursor) {
         expanded_filesize = temp_files[i].num_of_elements + temp_files[i].stop - temp_files[i].start;
         ratio = (cursor - temp_files[i].start)*1.0/(temp_files[i].stop - temp_files[i].start);
-        new_files.push(new SstFile(next_start_key, cursor, (temp_files[i].start - padding_end) + ratio*expanded_filesize));
+        new_files.push(new SstFile(next_start_key, cursor, (temp_files[i].start - padding_end + front_padding_num_elements) + ratio*expanded_filesize));
         front_padding_num_elements = (temp_files[i].stop - cursor)*1.0/(temp_files[i].stop - temp_files[i].start)*expanded_filesize;
+        next_start_key = cursor;
         padding_end = cursor;
         split_by_cursor = true;
       } else {
@@ -263,12 +274,14 @@ var cmpctToCurrLvl = function(policy) {
   }
 
   if (front_padding_num_elements > 0) {
-    new_files.push(new SstFile(next_start_key, 4, front_padding_num_elements));
+    var new_tt_elements = 0;
+    for (var i = 0; i < new_files.length; i++) {
+        new_tt_elements += new_files[i].num_of_elements;
+    }
+    //new_files.push(new SstFile(next_start_key, 4, parseFloat((front_padding_num_elements + 4 - padding_end).toFixed(2))));
+    new_files.push(new SstFile(next_start_key, 4, parseFloat((curr_total_elements + 4 - new_tt_elements).toFixed(2))));
   }
-  if(iterations >= 5) {
-    x = 0;
-    x++;
-  }
+  
   drawSstFiles(upper_rr_files, policy);
   drawSstFiles(new_files, policy);
 
@@ -291,20 +304,28 @@ var init = function() {
   upper_rr_files = [new SstFile(0.0, 4, 0.0)];
   rr_files = [new SstFile(0.0, 1, 4.0), new SstFile(1.0, 2.0, 4.0), new SstFile(2.0, 3.0, 4.0), new SstFile(3.0, 4.0, 4.0)];
   mo_files = [new SstFile(0.0, 1, 4.0), new SstFile(1.0, 2.0, 4.0), new SstFile(2.0, 3.0, 4.0), new SstFile(3.0, 4.0, 4.0)];
+  document.getElementById("rr-emul").innerHTML = "";
+  //document.getElementById("rr-emul-text").innerHTML = "Density of every selected file:";
+  document.getElementById("rr-emul-wa").innerHTML = "#bytes from compaction (read from the next lvl, others are the same):";
   drawSstFiles(upper_rr_files, "rr-emul");
   drawSstFiles(rr_files, "rr-emul");
+  document.getElementById("mo-emul").innerHTML = "";
+  //document.getElementById("mo-emul-text").innerHTML = "Density of every selected file:";
+  document.getElementById("mo-emul-wa").innerHTML = "#bytes from compaction (read from the next lvl, others are the same):";
   drawSstFiles(upper_rr_files, "mo-emul");
   drawSstFiles(mo_files, "mo-emul");
   var tmp = generateColor('#0000FF','#DFDFFF',10);
-
+  phase = -1;
+  iterations = 0;
+  /*
   for (cor in tmp) {
     //$('#gradient-show').append("<div style='padding:8px;color:#FFF;background-color:#"+tmp[cor]+"'>Density : "+cor/10+" - #"+tmp[cor]+"</div>")
     $('#gradient-show').append("<div style='padding:20px;color:#FFF;background-color:"+tmp[cor]+"'>Density : "+(cor*1+1)+"</div>")
-  }
+  }*/
 }
 
 function startPlaying() {
-	if (iterations >= 14) return;
+	if (iterations >= 6) return;
   if (phase == -1) {
     currLvlFull("rr-emul");
     currLvlFull("mo-emul");
