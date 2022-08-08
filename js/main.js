@@ -60,7 +60,7 @@ rr_acc_cmpct_elements_in_next_lvl = 0;
 mo_acc_cmpct_elements_in_next_lvl = 0;
 var getColor = function(density) {
   rate = density*1.0/max_density;
-  r = (Math.round(parseInt("00",16)*rate + (1 - rate)*parseInt("DF",16))).toString(16);
+  r = (Math.round(parseInt("00",16)*rate + (1 - rate)*parseInt("EF",16))).toString(16);
   g = r;
   return "#" + r + g + "FF";
 }
@@ -147,7 +147,7 @@ var pickFileToCompact = function(policy) {
     } else {
       rr_cursor = rr_files[file_idx_picked + 1].start;
     }
-    document.getElementById(policy+'-wa').innerHTML = "#bytes from compaction (read from the next lvl, others are the same): &nbsp;&nbsp;" + rr_acc_cmpct_elements_in_next_lvl.toFixed(2) + "x";
+    document.getElementById(policy+'-wa').innerHTML = "#bytes from compaction (read from the next lvl, others are the same): &nbsp;&nbsp;" + (rr_acc_cmpct_elements_in_next_lvl*4).toFixed(2) + "x";
   } else {
     var min_density = 0;
     for(var i = 0; i < mo_files.length; i++) {
@@ -159,7 +159,7 @@ var pickFileToCompact = function(policy) {
     selected_density = min_density;
     mo_last_pick_ele = mo_files[file_idx_picked].num_of_elements; 
     mo_acc_cmpct_elements_in_next_lvl += mo_files[file_idx_picked].stop - mo_files[file_idx_picked].start;
-    document.getElementById(policy+'-wa').innerHTML = "#bytes from compaction (read from the next lvl, others are the same): &nbsp;&nbsp;" + mo_acc_cmpct_elements_in_next_lvl.toFixed(2) + "x";
+    document.getElementById(policy+'-wa').innerHTML = "#bytes from compaction (read from the next lvl, others are the same): &nbsp;&nbsp;" + (mo_acc_cmpct_elements_in_next_lvl*4).toFixed(2) + "x";
   }
   selected_file_btn = parent_elem.lastChild.children[file_idx_picked];
   selected_file_btn.style['border-color'] = 'red';
@@ -317,6 +317,7 @@ var init = function() {
   var tmp = generateColor('#0000FF','#DFDFFF',10);
   phase = -1;
   iterations = 0;
+  rr_cursor = 0.0;
   /*
   for (cor in tmp) {
     //$('#gradient-show').append("<div style='padding:8px;color:#FFF;background-color:#"+tmp[cor]+"'>Density : "+cor/10+" - #"+tmp[cor]+"</div>")
@@ -325,18 +326,29 @@ var init = function() {
 }
 
 function startPlaying() {
-	if (iterations >= 6) return;
+	if (iterations >= 7) return;
   if (phase == -1) {
     currLvlFull("rr-emul");
     currLvlFull("mo-emul");
     phase++;
   } else if (phase == 0) {
     rr_picking_file_idx = pickFileToCompact("rr-emul");
-    mo_picking_file_idx = pickFileToCompact("mo-emul");
+    mo_picking_file_idx = pickFileToCompact("mo-emul"); 
     rr_files.splice(rr_picking_file_idx, 1);
     mo_files.splice(mo_picking_file_idx, 1);
     phase++;
   } else if (phase == 1) {
+   var cursor_margin_left = 0;
+    var interval = 0;
+    for (var i = 0; i < rr_files.length; i++) {
+        if (rr_files[i].start >= rr_cursor) {
+            interval++;
+            break;
+        }
+    }
+    var total_width = ((document.getElementById("rr-emul").clientWidth - 24 - 3*rr_files.length)*0.97 - 1)/4;
+    cursor_margin_left = total_width*rr_cursor + 24 + 10*interval;
+    document.getElementById("rr-cursor").style.margin = "0px 0px 0px " + cursor_margin_left + "px"
     emptyFile(rr_picking_file_idx, "rr-emul");
     emptyFile(mo_picking_file_idx, "mo-emul");
     phase++;
