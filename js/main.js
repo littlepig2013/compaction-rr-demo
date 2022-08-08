@@ -87,10 +87,10 @@ var drawSstFiles = function(input_files, policy) {
       color = "#FFFFFF";
     } else {
       if (input_files[i].stop - input_files[i].start < 0.2) {
-        btn.innerHTML = "<p style='font-style:bold;color:black;margin-left:-12px;font-size:12px;margin-top:5px'>" + parseFloat(input_files[i].num_of_elements.toFixed(2)) + "x" + "</p>";
+        btn.innerHTML = "<p style='font-style:bold;color:black;margin-left:-12px;font-size:12px;margin-top:5px'>" + parseFloat(input_files[i].num_of_elements.toFixed(2)) + "MB" + "</p>";
       } else {
         //btn.innerHTML = "<p class='text-center'>" + parseFloat(input_files[i].getDensity().toFixed(2)) + "x" + "</p>";
-        btn.innerHTML = "<p class='text-center' style='font-style:bold;'>" + parseFloat(input_files[i].num_of_elements.toFixed(2)) + "x" + "</p>";
+        btn.innerHTML = "<p class='text-center' style='font-style:bold;'>" + parseFloat(input_files[i].num_of_elements.toFixed(2)) + "MB" + "</p>";
       }
 
     }
@@ -179,7 +179,7 @@ var fillUpperLvl = function(policy) {
   var upper_lvl_elem = document.getElementById(policy).children[0];
   upper_lvl_elem.children[0].style['border'] = "thick solid #D3D3D3";
   upper_lvl_elem.children[0].style['background-color'] = getColor(4.00);
-  upper_lvl_elem.children[0].innerHTML = "4.00x";
+  upper_lvl_elem.children[0].innerHTML = "4MB";
   upper_lvl_elem.removeChild(upper_lvl_elem.lastChild);
   upper_lvl_elem.appendChild(createGlowBulb());
 }
@@ -302,6 +302,8 @@ var cmpctToCurrLvl = function(policy) {
 
 var init = function() {
   upper_rr_files = [new SstFile(0.0, 4, 0.0)];
+  rr_acc_cmpct_elements_in_next_lvl = 0;
+  mo_acc_cmpct_elements_in_next_lvl = 0;
   rr_files = [new SstFile(0.0, 1, 4.0), new SstFile(1.0, 2.0, 4.0), new SstFile(2.0, 3.0, 4.0), new SstFile(3.0, 4.0, 4.0)];
   mo_files = [new SstFile(0.0, 1, 4.0), new SstFile(1.0, 2.0, 4.0), new SstFile(2.0, 3.0, 4.0), new SstFile(3.0, 4.0, 4.0)];
   document.getElementById("rr-emul").innerHTML = "";
